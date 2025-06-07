@@ -1,28 +1,23 @@
 from fastapi import FastAPI, Request
-import pyodbc
-from datetime import datetime
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-# Conexión a SQL Server
-conn = pyodbc.connect(
-    'DRIVER={ODBC Driver 17 for SQL Server};'
-    'SERVER=BZX-TECH;DATABASE=MISPRUEBAS2;Trusted_Connection=yes;'
-)
-cursor = conn.cursor()
+@app.get("/")
+async def root():
+    return {"message": "API GPS funcionando correctamente"}
 
-@app.post("/api/gps")
-async def recibir_gps(request: Request):
-    data = await request.json()
-    dispositivo = data.get("dispositivo")
-    lat = data.get("latitud")
-    lon = data.get("longitud")
-    fecha = data.get("fecha", datetime.now().isoformat())
+@app.get("/saludo")
+async def saludo(nombre: str = "Usuario"):
+    return {"saludo": f"Hola, {nombre}"}
 
-    cursor.execute("""
-        INSERT INTO dbo.PosicionesGPS (dispositivo, latitud, longitud, fecha)
-        VALUES (?, ?, ?, ?)
-    """, dispositivo, lat, lon, fecha)
+@app.post("/eco")
+async def eco(data: dict):
+    return {"recibido": data}
 
-    conn.commit()
-    return {"status": "ok", "mensaje": "Datos guardados"}
+@app.exception_handler(Exception)
+async def error_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc)},
+    )
